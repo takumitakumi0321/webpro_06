@@ -1,4 +1,4 @@
-"use strict";
+"use strict";     // Javaスプリクトの文法を厳しくチェック
 const express = require("express");
 const app = express();
 
@@ -83,11 +83,14 @@ app.post("/add", (req, res) => {
 });
 
 // これより下はBBS関係
+
+
 app.post("/check", (req, res) => {
   // 本来はここでDBMSに問い合わせる
   res.json( {number: bbs.length });
 });
 
+//
 app.post("/read", (req, res) => {
   // 本来はここでDBMSに問い合わせる
   const start = Number( req.body.start );
@@ -97,12 +100,50 @@ app.post("/read", (req, res) => {
 });
 
 app.post("/post", (req, res) => {
+  const id = bbs.length +1;
   const name = req.body.name;
   const message = req.body.message;
   console.log( [name, message] );
-  // 本来はここでDBMSに保存する
-  bbs.push( { name: name, message: message } );
+  bbs.push( { name: name, message: message ,id:id} );
   res.json( {number: bbs.length } );
+});
+
+
+
+app.post("/like", (req, res) => {
+  const postId = Number(req.body.id) - 1;
+  if (bbs[postId]) {
+    bbs[postId].likes = (bbs[postId].likes || 0) + 1;
+    console.log(`Post ${postId} liked! Total likes: ${bbs[postId].likes}`);
+    res.json({ likes: bbs[postId].likes });
+  }
+});
+
+app.post("/delete", (req, res) => {
+  const postId = Number(req.body.id);
+  let found = false;
+  let newBbs = [];
+  for (let i = 0; i < bbs.length; i++) {
+      if (bbs[i].id !== postId) {
+          newBbs.push(bbs[i]);
+      } else {
+          found = true;
+      }
+  }
+  if (found) {
+      bbs = newBbs;
+      console.log(`Post ${postId} deleted.`);
+      res.json({ success: true ,number: bbs.length});
+  } 
+});
+
+app.post('/pin', (req, res) => {
+  const { id } = req.body;
+  const post = bbs.find(p => p.id === parseInt(id));  // 修正
+  if (post) {
+      post.pinned = !post.pinned;  
+      res.json(post);
+  } 
 });
 
 app.listen(8080, () => console.log("Example app listening on port 8080!"));
